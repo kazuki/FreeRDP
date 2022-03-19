@@ -322,7 +322,7 @@ static BOOL xf_desktop_resize(rdpContext* context)
 
 static BOOL xf_sw_end_paint(rdpContext* context)
 {
-	int i;
+	int i, j;
 	INT32 x, y;
 	UINT32 w, h;
 	int ninvalid;
@@ -339,6 +339,17 @@ static BOOL xf_sw_end_paint(rdpContext* context)
 	h = gdi->primary->hdc->hwnd->invalid->h;
 	ninvalid = gdi->primary->hdc->hwnd->ninvalid;
 	cinvalid = gdi->primary->hdc->hwnd->cinvalid;
+
+	if (xfc->depth == 30 && xfc->invert) {
+		// BGRX32 to 30bit Packed Pixel Format (B10-G10-R10-A2)
+		for (j = y; j < y + h; j ++) {
+			unsigned char *s = ((unsigned char*)gdi->primary_buffer) + (j * gdi->stride);
+			for (i = x; i < x + w; i ++) {
+				unsigned char *p = s + 4 * i;
+				*((unsigned int*)p) = (p[2] << 22) | (p[1] << 12) | (p[0] << 2);
+			}
+		}
+	}
 
 	if (!xfc->remote_app)
 	{
